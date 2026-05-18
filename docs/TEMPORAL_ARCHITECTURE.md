@@ -112,6 +112,7 @@ const (
     EdgeTypeModification
     EdgeTypeDependency
     EdgeTypeIssueRelation
+    EdgeTypeContainment
 )
 
 // Edge represents a relationship between nodes
@@ -229,7 +230,7 @@ func NewSnapshot(timestamp time.Time, g *graph.Graph) *Snapshot
 func (s *Snapshot) ComputeMetrics() error
 
 // Timeline operations
-func NewTimeline(repoName string) *Timeline
+func NewTimeline(owner, repoName string) *Timeline
 func (t *Timeline) AddSnapshot(snapshot *Snapshot) error
 func (t *Timeline) GetSnapshot(timestamp time.Time) (*Snapshot, error)
 func (t *Timeline) Snapshots(startTime, endTime time.Time) []*Snapshot
@@ -381,18 +382,18 @@ type ForecastResult struct {
 
 ```go
 // Health forecasting
-func (p *Predictor) ForecastHealth(timeline *temporal.Timeline, months int) ForecastResult
-func (p *Predictor) ForecastMaturity(timeline *temporal.Timeline, months int) ForecastResult
+func (p *Predictor) ForecastHealth(timeline *temporal.Timeline, months int) (*ForecastResult, error)
+func (p *Predictor) ForecastMaturity(timeline *temporal.Timeline, months int) (*ForecastResult, error)
 
 // Contributor risk
-func (p *Predictor) ForecastContributorRisk(timeline *temporal.Timeline) []ContributorRiskForecast
-func (p *Predictor) EstimateBurnoutRisk(contributor string, timeline *temporal.Timeline) float64
+func (p *Predictor) ForecastContributorRisk(timeline *temporal.Timeline) ([]ContributorRiskForecast, error)
+func (p *Predictor) EstimateBurnoutRisk(contributor string, timeline *temporal.Timeline) (float64, error)
 
 // Dependency analysis
-func (p *Predictor) ForecastDependencyStability(timeline *temporal.Timeline, months int) ForecastResult
+func (p *Predictor) ForecastDependencyStability(timeline *temporal.Timeline, months int) (*ForecastResult, error)
 
 // Debt projection
-func (p *Predictor) ProjectTechnicalDebt(timeline *temporal.Timeline, months int) ForecastResult
+func (p *Predictor) ProjectTechnicalDebt(timeline *temporal.Timeline, months int) (*ForecastResult, error)
 ```
 
 #### Integration Points
@@ -674,11 +675,12 @@ func CalculateTemporalHealth(repo *github.Repo, timeline *temporal.Timeline) Tem
 New formatters in `internal/output/`:
 
 ```go
+
 // JSON output for temporal data
-func OutputTemporalJSON(result AnalysisResult) (string, error)
+func OutputTemporalJSON(result *AnalysisResult) (string, error)
 
 // Markdown reports
-func OutputTemporalMarkdown(result AnalysisResult) (string, error)
+func OutputTemporalMarkdown(result *AnalysisResult) (string, error)
 
 // Charts for trends
 func RenderTemporalChart(predictions []predictive.Prediction) string

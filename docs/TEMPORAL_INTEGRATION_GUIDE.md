@@ -145,12 +145,19 @@ func CalculateTemporalHealth(
     
     // 2. Reconstruct temporal data
     coordinator := temporal.NewCoordinator(repo.Owner, repo.Name)
-    coordinator.ReconstructFromEvents(events)
-    
+    if err := coordinator.ReconstructFromEvents(events); err != nil {
+        // handle error appropriately
+        return TemporalHealthReport{}
+    }
+
     // 3. Analyze evolution
-    coordinator.AnalyzeEvolution()
-    coordinator.ForecastHealth(6)
-    
+    if err := coordinator.AnalyzeEvolution(); err != nil {
+        return TemporalHealthReport{}
+    }
+    if err := coordinator.ForecastHealth(6); err != nil {
+        return TemporalHealthReport{}
+    }
+
     // 4. Create combined report
     return TemporalHealthReport{
         CurrentHealth:    currentHealth,
@@ -286,15 +293,23 @@ func(cmd *cobra.Command, args []string) error {
     
     // 4. Convert commits to events and reconstruct
     events := convertCommitsToEvents(commits)
-    err := coordinator.ReconstructFromEvents(events)
-    
+    if err := coordinator.ReconstructFromEvents(events); err != nil {
+        return err
+    }
+
     // 5. Run analysis pipeline
     result, err := coordinator.FullAnalysisPipeline(events, 6)
-    
+    if err != nil {
+        return err
+    }
+
     // 6. Format and display
-    output := outputTemporalMarkdown(result)
-    fmt.Println(output)
-    
+    out, err := output.OutputTemporalMarkdown(result)
+    if err != nil {
+        return err
+    }
+    fmt.Println(out)
+
     return nil
 }
 ```

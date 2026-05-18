@@ -58,6 +58,7 @@ const (
     EdgeTypeDependency
     EdgeTypeIssueRelation
     EdgeTypeContainment
+    EdgeTypeContainment
 )
 ```
 
@@ -395,7 +396,7 @@ type Predictor struct {
 - `ForecastHealth(timeline *temporal.Timeline, months int) (*ForecastResult, error)` - Predicts health
 - `ForecastMaturity(timeline *temporal.Timeline, months int) (*ForecastResult, error)` - Predicts maturity
 - `ForecastContributorRisk(timeline *temporal.Timeline) ([]ContributorRiskForecast, error)` - Predicts contributor risks
-- `EstimateBurnoutRisk(contributor string, timeline *temporal.Timeline) float64` - Estimates burnout
+- `EstimateBurnoutRisk(contributor string, timeline *temporal.Timeline) (float64, error)` - Estimates burnout
 - `ForecastDependencyStability(timeline *temporal.Timeline, months int) (*ForecastResult, error)` - Predicts dependency stability
 - `ProjectTechnicalDebt(timeline *temporal.Timeline, months int) (*ForecastResult, error)` - Projects technical debt
 
@@ -565,7 +566,7 @@ fmt.Printf("Critical Issues: %v\n", result.CriticalIssues)
 
 ## Error Handling
 
-All functions return `error` as the last return value (idiomatic Go). Always check for errors:
+Operations that can fail return `error` as the last return value (idiomatic Go). Always check for errors:
 
 ```go
 coordinator := temporal.NewCoordinator("owner", "repo")

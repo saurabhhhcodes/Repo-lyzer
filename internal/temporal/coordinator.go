@@ -84,6 +84,15 @@ func (c *Coordinator) ReconstructFromEvents(events []TemporalEvent) error {
 		return fmt.Errorf("cannot reconstruct timeline from empty event list")
 	}
 
+	// Reset coordinator state for a fresh analysis run
+	c.Timeline = NewTimeline(c.Timeline.Owner, c.Timeline.RepoName)
+	c.EvolutionPatterns = c.EvolutionPatterns[:0]
+	c.DriftIndicators = c.DriftIndicators[:0]
+	c.RiskIndicators = c.RiskIndicators[:0]
+	c.HealthForecast = nil
+	c.ContributorRisks = c.ContributorRisks[:0]
+	c.SimulationResults = c.SimulationResults[:0]
+
 	// Add events to timeline
 	for _, event := range events {
 		if err := c.Timeline.AddEvent(event); err != nil {

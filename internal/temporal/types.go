@@ -64,20 +64,7 @@ type RepositoryMetrics struct {
 
 // NewRepositoryMetrics creates a new RepositoryMetrics struct.
 func NewRepositoryMetrics() RepositoryMetrics {
-	return RepositoryMetrics{
-		CommitCount:            0,
-		ContributorCount:       0,
-		ActiveContributors:     0,
-		AverageBusFactor:       0,
-		AverageHealth:          0,
-		FilesChanged:           0,
-		LinesAdded:             0,
-		LinesRemoved:           0,
-		AverageCommitFrequency: 0,
-		DependencyCount:        0,
-		IssuesOpen:             0,
-		PullRequestsOpen:       0,
-	}
+	return RepositoryMetrics{}
 }
 
 // AggregatedMetrics represents metrics aggregated over a time window.

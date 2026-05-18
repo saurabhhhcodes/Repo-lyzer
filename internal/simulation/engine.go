@@ -25,24 +25,9 @@ func (s *ScenarioRunner) RunScenario(scenario SimulationScenario, timeline *temp
 		return nil, fmt.Errorf("scenario must have a name")
 	}
 
-	result := &SimulationResult{
-		Scenario:             scenario,
-		InitialState:         make(map[string]float64),
-		FinalState:           make(map[string]float64),
-		HealthTrajectory:     make([]float64, 0),
-		RiskTrajectory:       make([]float64, 0),
-		ComplexityTrajectory: make([]float64, 0),
-		Timestamps:           make([]time.Time, 0),
-		KeyFindings:          make([]string, 0),
-		Recommendations:      make([]string, 0),
-		HealthChange:         0,
-		RiskChange:           0,
-		Success:              true,
-	}
-
 	// TODO: Implement scenario execution logic
 
-	return result, nil
+	return nil, fmt.Errorf("scenario execution not yet implemented")
 }
 
 // RunMultipleScenarios executes multiple scenarios and returns all results.
@@ -74,6 +59,13 @@ func (s *ScenarioRunner) SimulateContributorDeparture(timeline *temporal.Timelin
 		return nil, fmt.Errorf("timeline is empty")
 	}
 
+	if contributor == "" {
+		return nil, fmt.Errorf("contributor name is required")
+	}
+	if replacementMonths <= 0 {
+		return nil, fmt.Errorf("replacementMonths must be positive")
+	}
+
 	scenario := NewScenario(
 		fmt.Sprintf("Departure of %s", contributor),
 		"contributor_departure",
@@ -96,6 +88,13 @@ func (s *ScenarioRunner) SimulateContributorDeparture(timeline *temporal.Timelin
 func (s *ScenarioRunner) SimulateMajorRefactoring(timeline *temporal.Timeline, subsystem string, effortHours int) (*SimulationResult, error) {
 	if timeline == nil || timeline.IsEmpty() {
 		return nil, fmt.Errorf("timeline is empty")
+	}
+
+	if subsystem == "" {
+		return nil, fmt.Errorf("subsystem name is required")
+	}
+	if effortHours <= 0 {
+		return nil, fmt.Errorf("effortHours must be positive")
 	}
 
 	durationDays := (effortHours / (8 * 5)) + 30 // Estimated duration plus buffer
@@ -121,6 +120,10 @@ func (s *ScenarioRunner) SimulateMajorRefactoring(timeline *temporal.Timeline, s
 func (s *ScenarioRunner) SimulateDependencyUpgrade(timeline *temporal.Timeline, dependency string, breakingChange bool) (*SimulationResult, error) {
 	if timeline == nil || timeline.IsEmpty() {
 		return nil, fmt.Errorf("timeline is empty")
+	}
+
+	if dependency == "" {
+		return nil, fmt.Errorf("dependency name is required")
 	}
 
 	duration := 60 * 24 * time.Hour
@@ -152,6 +155,16 @@ func (s *ScenarioRunner) SimulateRapidGrowth(timeline *temporal.Timeline, subsys
 		return nil, fmt.Errorf("timeline is empty")
 	}
 
+	if subsystem == "" {
+		return nil, fmt.Errorf("subsystem name is required")
+	}
+	if growthRate <= 0 {
+		return nil, fmt.Errorf("growthRate must be positive")
+	}
+	if teamSize <= 0 {
+		return nil, fmt.Errorf("teamSize must be positive")
+	}
+
 	scenario := NewScenario(
 		fmt.Sprintf("Growth in %s", subsystem),
 		"subsystem_growth",
@@ -176,7 +189,11 @@ func (s *ScenarioRunner) CompareScenarios(scenarios []SimulationScenario, timeli
 		return "", fmt.Errorf("must provide at least one scenario")
 	}
 
+	if timeline == nil || timeline.IsEmpty() {
+		return "", fmt.Errorf("timeline is empty")
+	}
+
 	// TODO: Implement scenario comparison logic
 
-	return "Scenario comparison analysis", nil
+	return "", fmt.Errorf("scenario comparison not yet implemented")
 }

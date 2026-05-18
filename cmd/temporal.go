@@ -54,7 +54,7 @@ The analysis includes:
 		fmt.Println("  4. Analyze contributor networks")
 		fmt.Println("  5. Compute evolution patterns and risks")
 		fmt.Println("\nFeature coming soon!")
-		return nil
+		return fmt.Errorf("temporal analyze command not yet implemented")
 	},
 }
 
@@ -79,7 +79,7 @@ var forecastCmd = &cobra.Command{
 		fmt.Println("  - Contributor risks")
 		fmt.Println("  - Dependency stability")
 		fmt.Println("\nFeature coming soon!")
-		return nil
+		return fmt.Errorf("temporal forecast command not yet implemented")
 	},
 }
 
@@ -104,7 +104,7 @@ var contributorsCmd = &cobra.Command{
 		fmt.Println("  - Identify critical contributors")
 		fmt.Println("  - Track role evolution")
 		fmt.Println("\nFeature coming soon!")
-		return nil
+		return fmt.Errorf("temporal contributors command not yet implemented")
 	},
 }
 
@@ -128,7 +128,7 @@ var driftCmd = &cobra.Command{
 		fmt.Println("  - Code organization shifts")
 		fmt.Println("  - Architectural decay indicators")
 		fmt.Println("\nFeature coming soon!")
-		return nil
+		return fmt.Errorf("temporal drift command not yet implemented")
 	},
 }
 
@@ -155,7 +155,7 @@ var simulateCmd = &cobra.Command{
 		fmt.Println("  - major_dependency_upgrade")
 		fmt.Println("  - large_refactoring")
 		fmt.Println("\nFeature coming soon!")
-		return nil
+		return fmt.Errorf("temporal simulate command not yet implemented")
 	},
 }
 

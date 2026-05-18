@@ -105,6 +105,13 @@ func (t *Timeline) AddEvent(event TemporalEvent) error {
 		return fmt.Errorf("event timestamp cannot be zero")
 	}
 
+	if len(t.Events) > 0 {
+		lastEvent := t.Events[len(t.Events)-1]
+		if event.Timestamp.Before(lastEvent.Timestamp) {
+			return fmt.Errorf("events must be added in chronological order")
+		}
+	}
+
 	t.Events = append(t.Events, event)
 	return nil
 }
@@ -209,7 +216,7 @@ func (t *Timeline) EarliestSnapshot() *Snapshot {
 	return t.Snapshots[0]
 }
 
-// SnaphotAtIndex returns the snapshot at the given index.
+// SnapshotAtIndex returns the snapshot at the given index.
 func (t *Timeline) SnapshotAtIndex(index int) (*Snapshot, error) {
 	if index < 0 || index >= len(t.Snapshots) {
 		return nil, fmt.Errorf("index %d out of range [0, %d)", index, len(t.Snapshots))

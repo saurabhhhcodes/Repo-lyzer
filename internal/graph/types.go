@@ -109,6 +109,9 @@ func NewNode(id string, nodeType NodeType) *Node {
 
 // SetMetadata sets a metadata key-value pair.
 func (n *Node) SetMetadata(key string, value interface{}) {
+	if n.Metadata == nil {
+		n.Metadata = make(map[string]interface{})
+	}
 	n.Metadata[key] = value
 }
 
@@ -151,21 +154,28 @@ func NewEdge(source, target *Node, edgeType EdgeType, weight float64) *Edge {
 	}
 }
 
-// IncreaseWeight increases the edge weight, capped at 1.0.
+// IncreaseWeight increases the edge weight using a running average.
+// Updates the weight to reflect the average across all occurrences,
+// clamped to [0, 1].
 func (e *Edge) IncreaseWeight(delta float64) {
-	e.Weight += delta
+	// Compute new average: (old_avg * occurrences + delta) / (occurrences + 1)
+	total := e.Weight*float64(e.Occurrences) + delta
+	e.Occurrences++
+	e.Weight = total / float64(e.Occurrences)
+
+	// Clamp to valid range [0, 1]
 	if e.Weight > 1.0 {
 		e.Weight = 1.0
 	}
-	e.Occurrences++
+	if e.Weight < 0.0 {
+		e.Weight = 0.0
+	}
 }
 
-// AverageWeight computes the average weight based on occurrences.
+// AverageWeight returns the current edge weight, which is maintained
+// as a running average across all occurrences.
 func (e *Edge) AverageWeight() float64 {
-	if e.Occurrences == 0 {
-		return 0
-	}
-	return e.Weight / float64(e.Occurrences)
+	return e.Weight
 }
 
 // GraphMetrics captures computed metrics about a graph.

@@ -5,6 +5,48 @@ import (
 	"sync"
 )
 
+// cloneNode creates a deep copy of a Node to avoid exposing internal pointers.
+func cloneNode(n *Node) *Node {
+	if n == nil {
+		return nil
+	}
+	m := make(map[string]interface{})
+	for k, v := range n.Metadata {
+		m[k] = v
+	}
+	return &Node{
+		ID:          n.ID,
+		Type:        n.Type,
+		Timestamp:   n.Timestamp,
+		Metadata:    m,
+		Occurrences: n.Occurrences,
+	}
+}
+
+// cloneEdge creates a deep copy of an Edge, cloning source/target nodes.
+func cloneEdge(e *Edge) *Edge {
+	if e == nil {
+		return nil
+	}
+	return &Edge{
+		Source:      cloneNode(e.Source),
+		Target:      cloneNode(e.Target),
+		Type:        e.Type,
+		Weight:      e.Weight,
+		Timestamp:   e.Timestamp,
+		Occurrences: e.Occurrences,
+	}
+}
+
+// getInternalNode returns the internal node pointer without cloning. The
+// caller must hold the appropriate locks if necessary.
+func (g *Graph) getInternalNode(id string) (*Node, bool) {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+	n, ok := g.nodes[id]
+	return n, ok
+}
+
 // Graph represents the temporal repository ecosystem as a directed graph.
 // It maintains collections of nodes and edges with efficient lookup indices.
 type Graph struct {
@@ -67,6 +109,14 @@ func (g *Graph) AddEdge(edge *Edge) error {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
+	// Validate that both nodes exist in the graph
+	if _, ok := g.nodes[edge.Source.ID]; !ok {
+		return fmt.Errorf("source node %s does not exist in graph", edge.Source.ID)
+	}
+	if _, ok := g.nodes[edge.Target.ID]; !ok {
+		return fmt.Errorf("target node %s does not exist in graph", edge.Target.ID)
+	}
+
 	// Check if edge already exists
 	if existingEdges, ok := g.edgeIndex[edge.Source.ID]; ok {
 		for _, e := range existingEdges {
@@ -88,25 +138,24 @@ func (g *Graph) AddEdge(edge *Edge) error {
 // GetNode retrieves a node by ID, returning an error if not found.
 func (g *Graph) GetNode(id string) (*Node, error) {
 	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-
 	node, exists := g.nodes[id]
+	g.mutex.RUnlock()
 	if !exists {
 		return nil, fmt.Errorf("node with ID %s not found", id)
 	}
-
-	return node, nil
+	return cloneNode(node), nil
 }
 
 // GetEdges retrieves all outgoing edges from a source node.
 func (g *Graph) GetEdges(sourceID string) []*Edge {
 	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-
 	edges := g.edgeIndex[sourceID]
-	// Return a copy to prevent external modification
-	result := make([]*Edge, len(edges))
-	copy(result, edges)
+	g.mutex.RUnlock()
+
+	result := make([]*Edge, 0, len(edges))
+	for _, e := range edges {
+		result = append(result, cloneEdge(e))
+	}
 	return result
 }
 
@@ -118,7 +167,7 @@ func (g *Graph) Query(predicate func(*Node) bool) []*Node {
 	var results []*Node
 	for _, node := range g.nodes {
 		if predicate(node) {
-			results = append(results, node)
+			results = append(results, cloneNode(node))
 		}
 	}
 
@@ -128,12 +177,13 @@ func (g *Graph) Query(predicate func(*Node) bool) []*Node {
 // QueryByType returns all nodes of the specified type.
 func (g *Graph) QueryByType(nodeType NodeType) []*Node {
 	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-
 	nodes := g.nodeIndex[nodeType]
-	// Return a copy to prevent external modification
-	result := make([]*Node, len(nodes))
-	copy(result, nodes)
+	g.mutex.RUnlock()
+
+	result := make([]*Node, 0, len(nodes))
+	for _, n := range nodes {
+		result = append(result, cloneNode(n))
+	}
 	return result
 }
 
@@ -156,12 +206,11 @@ func (g *Graph) EdgeCount() int {
 // GetAllNodes returns all nodes in the graph.
 func (g *Graph) GetAllNodes() []*Node {
 	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-
 	nodes := make([]*Node, 0, len(g.nodes))
 	for _, node := range g.nodes {
-		nodes = append(nodes, node)
+		nodes = append(nodes, cloneNode(node))
 	}
+	g.mutex.RUnlock()
 
 	return nodes
 }
@@ -169,10 +218,11 @@ func (g *Graph) GetAllNodes() []*Node {
 // GetAllEdges returns all edges in the graph.
 func (g *Graph) GetAllEdges() []*Edge {
 	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-
-	edges := make([]*Edge, len(g.edges))
-	copy(edges, g.edges)
+	edges := make([]*Edge, 0, len(g.edges))
+	for _, e := range g.edges {
+		edges = append(edges, cloneEdge(e))
+	}
+	g.mutex.RUnlock()
 	return edges
 }
 

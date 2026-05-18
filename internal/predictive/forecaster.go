@@ -21,23 +21,14 @@ func (p *Predictor) ForecastHealth(timeline *temporal.Timeline, months int) (*Fo
 	}
 
 	if months <= 0 {
-		months = 6 // Default: 6 months
+		months = p.ForecastHorizon
 	}
-
-	result := &ForecastResult{
-		Metric:          "repository_health",
-		Predictions:     make([]Prediction, 0),
-		Trend:           "stable",
-		RiskLevel:       "medium",
-		Recommendations: make([]string, 0),
-		ConfidenceScore: 0.8,
-		BaselineMean:    75.0,
-		BaselineStdDev:  10.0,
+	if months <= 0 {
+		return nil, fmt.Errorf("invalid forecast horizon: %d", months)
 	}
 
 	// TODO: Implement health forecasting logic
-
-	return result, nil
+	return nil, fmt.Errorf("health forecasting not yet implemented")
 }
 
 // ForecastMaturity generates predictions for repository maturity.
@@ -53,23 +44,14 @@ func (p *Predictor) ForecastMaturity(timeline *temporal.Timeline, months int) (*
 	}
 
 	if months <= 0 {
-		months = 6
+		months = p.ForecastHorizon
 	}
-
-	result := &ForecastResult{
-		Metric:          "repository_maturity",
-		Predictions:     make([]Prediction, 0),
-		Trend:           "improving",
-		RiskLevel:       "low",
-		Recommendations: make([]string, 0),
-		ConfidenceScore: 0.85,
-		BaselineMean:    60.0,
-		BaselineStdDev:  15.0,
+	if months <= 0 {
+		return nil, fmt.Errorf("invalid forecast horizon: %d", months)
 	}
 
 	// TODO: Implement maturity forecasting logic
-
-	return result, nil
+	return nil, fmt.Errorf("maturity forecasting not yet implemented")
 }
 
 // ForecastContributorRisk generates contributor-related risk predictions.
@@ -86,10 +68,8 @@ func (p *Predictor) ForecastContributorRisk(timeline *temporal.Timeline) ([]Cont
 		return nil, fmt.Errorf("timeline is empty")
 	}
 
-	risks := make([]ContributorRiskForecast, 0)
 	// TODO: Implement contributor risk forecasting
-
-	return risks, nil
+	return nil, fmt.Errorf("contributor risk forecasting not yet implemented")
 }
 
 // EstimateBurnoutRisk estimates the burnout risk for a specific contributor.
@@ -101,13 +81,17 @@ func (p *Predictor) ForecastContributorRisk(timeline *temporal.Timeline) ([]Cont
 // - Computing code review load
 // - Analyzing issue triage patterns
 // - Detecting sustained high effort over time
-func (p *Predictor) EstimateBurnoutRisk(contributor string, timeline *temporal.Timeline) float64 {
+func (p *Predictor) EstimateBurnoutRisk(contributor string, timeline *temporal.Timeline) (float64, error) {
 	if timeline == nil || timeline.IsEmpty() {
-		return 0.0
+		return 0.0, fmt.Errorf("timeline is empty")
+	}
+
+	if contributor == "" {
+		return 0.0, fmt.Errorf("contributor name is required")
 	}
 
 	// TODO: Implement burnout risk estimation
-	return 0.3 // Placeholder
+	return 0.0, fmt.Errorf("burnout risk estimation not yet implemented")
 }
 
 // ForecastDependencyStability generates predictions for dependency stability.
@@ -124,23 +108,14 @@ func (p *Predictor) ForecastDependencyStability(timeline *temporal.Timeline, mon
 	}
 
 	if months <= 0 {
-		months = 6
+		months = p.ForecastHorizon
 	}
-
-	result := &ForecastResult{
-		Metric:          "dependency_stability",
-		Predictions:     make([]Prediction, 0),
-		Trend:           "stable",
-		RiskLevel:       "low",
-		Recommendations: make([]string, 0),
-		ConfidenceScore: 0.75,
-		BaselineMean:    80.0,
-		BaselineStdDev:  12.0,
+	if months <= 0 {
+		return nil, fmt.Errorf("invalid forecast horizon: %d", months)
 	}
 
 	// TODO: Implement dependency stability forecasting
-
-	return result, nil
+	return nil, fmt.Errorf("dependency stability forecasting not yet implemented")
 }
 
 // ProjectTechnicalDebt generates predictions for technical debt accumulation.
@@ -158,23 +133,14 @@ func (p *Predictor) ProjectTechnicalDebt(timeline *temporal.Timeline, months int
 	}
 
 	if months <= 0 {
-		months = 6
+		months = p.ForecastHorizon
 	}
-
-	result := &ForecastResult{
-		Metric:          "technical_debt",
-		Predictions:     make([]Prediction, 0),
-		Trend:           "stable",
-		RiskLevel:       "medium",
-		Recommendations: make([]string, 0),
-		ConfidenceScore: 0.70,
-		BaselineMean:    40.0,
-		BaselineStdDev:  20.0,
+	if months <= 0 {
+		return nil, fmt.Errorf("invalid forecast horizon: %d", months)
 	}
 
 	// TODO: Implement technical debt projection
-
-	return result, nil
+	return nil, fmt.Errorf("technical debt projection not yet implemented")
 }
 
 // LinearRegressionModel is a simple linear regression implementation for forecasting.

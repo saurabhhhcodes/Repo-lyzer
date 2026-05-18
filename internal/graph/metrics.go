@@ -1,12 +1,9 @@
 package graph
 
-import (
-	"math"
-)
-
 // DegreeCentrality computes the degree centrality of a node.
 // Degree centrality is the number of edges connected to a node.
-// Normalized to [0, 1] by dividing by (n-1) where n is the total number of nodes.
+// Normalized to [0, 1] by dividing by 2*(n-1) for directed graphs,
+// where n is the total number of nodes.
 func (g *Graph) DegreeCentrality(node *Node) float64 {
 	g.mutex.RLock()
 	defer g.mutex.RUnlock()
@@ -28,7 +25,7 @@ func (g *Graph) DegreeCentrality(node *Node) float64 {
 		return 0
 	}
 
-	return float64(totalDegree) / float64(len(g.nodes)-1)
+	return float64(totalDegree) / float64(2*(len(g.nodes)-1))
 }
 
 // ClusteringCoefficient computes the clustering coefficient of a node.
@@ -61,7 +58,7 @@ func (g *Graph) ClusteringCoefficient(node *Node) float64 {
 		return 0 // Can't form a triangle with fewer than 2 neighbors
 	}
 
-	// Count edges between neighbors
+	// Count edges between neighbors (directed)
 	edgesBetweenNeighbors := 0
 	for neighborID := range neighbors {
 		for _, edge := range g.edgeIndex[neighborID] {
@@ -71,8 +68,8 @@ func (g *Graph) ClusteringCoefficient(node *Node) float64 {
 		}
 	}
 
-	// Maximum possible edges between neighbors
-	maxEdges := numNeighbors * (numNeighbors - 1) / 2
+	// Maximum possible edges between neighbors in a directed graph
+	maxEdges := numNeighbors * (numNeighbors - 1)
 
 	if maxEdges == 0 {
 		return 0
@@ -279,32 +276,18 @@ func (g *Graph) shortestPath(from, to *Node) []*Node {
 // ClosestNodesByDistance finds the N closest nodes to a given node based on
 // some distance metric. Uses degree-based distance as default.
 func (g *Graph) ClosestNodesByDistance(node *Node, count int) []*Node {
-	allNodes := g.GetAllNodes()
-
-	type nodeDistance struct {
-		node     *Node
-		distance float64
+	if node == nil {
+		return nil
 	}
 
-	var distances []nodeDistance
-	for _, other := range allNodes {
-		if other.ID != node.ID {
-			// Use inverse of degree centrality as distance
-			degree := g.DegreeCentrality(other)
-			distance := 1.0 / math.Max(degree, 0.01)
-			distances = append(distances, nodeDistance{other, distance})
-		}
+	nodes, _, err := g.NodesByDistance(node.ID)
+	if err != nil {
+		return nil
 	}
 
-	// Sort and return top count nodes
-	if len(distances) > count {
-		distances = distances[:count]
+	if count <= 0 || count > len(nodes) {
+		count = len(nodes)
 	}
 
-	result := make([]*Node, len(distances))
-	for i, nd := range distances {
-		result[i] = nd.node
-	}
-
-	return result
+	return nodes[:count]
 }

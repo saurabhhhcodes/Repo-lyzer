@@ -2,6 +2,7 @@ package graph
 
 import (
 	"fmt"
+	"sort"
 )
 
 // TraversalVisitor is a function type for visiting nodes during graph traversal.
@@ -12,9 +13,13 @@ type TraversalVisitor func(*Node) error
 // It calls the visitor function for each visited node.
 // Returns an error if the visitor returns an error or if the start node is not found.
 func (g *Graph) DFS(startID string, visitor TraversalVisitor) error {
-	node, err := g.GetNode(startID)
-	if err != nil {
-		return err
+	if visitor == nil {
+		return fmt.Errorf("visitor cannot be nil")
+	}
+
+	node, ok := g.getInternalNode(startID)
+	if !ok {
+		return fmt.Errorf("start node %s not found", startID)
 	}
 
 	visited := make(map[string]bool)
@@ -50,9 +55,13 @@ func (g *Graph) dfsHelper(node *Node, visitor TraversalVisitor, visited map[stri
 // It calls the visitor function for each visited node in level order.
 // Returns an error if the visitor returns an error or if the start node is not found.
 func (g *Graph) BFS(startID string, visitor TraversalVisitor) error {
-	node, err := g.GetNode(startID)
-	if err != nil {
-		return err
+	if visitor == nil {
+		return fmt.Errorf("visitor cannot be nil")
+	}
+
+	node, ok := g.getInternalNode(startID)
+	if !ok {
+		return fmt.Errorf("start node %s not found", startID)
 	}
 
 	visited := make(map[string]bool)
@@ -85,14 +94,14 @@ func (g *Graph) BFS(startID string, visitor TraversalVisitor) error {
 // ShortestPath finds the shortest path between two nodes using BFS.
 // Returns the path as a slice of nodes, or nil if no path exists.
 func (g *Graph) ShortestPath(fromID, toID string) ([]*Node, error) {
-	fromNode, err := g.GetNode(fromID)
-	if err != nil {
-		return nil, err
+	fromNode, ok := g.getInternalNode(fromID)
+	if !ok {
+		return nil, fmt.Errorf("node %s not found", fromID)
 	}
 
-	toNode, err := g.GetNode(toID)
-	if err != nil {
-		return nil, err
+	toNode, ok := g.getInternalNode(toID)
+	if !ok {
+		return nil, fmt.Errorf("node %s not found", toID)
 	}
 
 	if fromID == toID {
@@ -111,9 +120,9 @@ func (g *Graph) ShortestPath(fromID, toID string) ([]*Node, error) {
 // This can be expensive for large graphs with many cycles.
 // Paths are limited to avoid exponential explosion.
 func (g *Graph) AllPaths(fromID, toID string, maxDepth int) ([][]*Node, error) {
-	fromNode, err := g.GetNode(fromID)
-	if err != nil {
-		return nil, err
+	fromNode, ok := g.getInternalNode(fromID)
+	if !ok {
+		return nil, fmt.Errorf("node %s not found", fromID)
 	}
 
 	if fromID == toID {
@@ -160,8 +169,8 @@ func (g *Graph) findAllPathsHelper(current *Node, targetID string, path []*Node,
 // DistanceTo computes the shortest distance (number of edges) from one node to another.
 // Returns -1 if no path exists.
 func (g *Graph) DistanceTo(fromID, toID string) int {
-	fromNode, err := g.GetNode(fromID)
-	if err != nil {
+	fromNode, ok := g.getInternalNode(fromID)
+	if !ok {
 		return -1
 	}
 
@@ -260,14 +269,12 @@ func (g *Graph) FilterNodes(predicate func(*Node) bool) []*Node {
 // NodesByDistance returns a list of nodes sorted by their distance from a source node.
 // Nodes are returned in order of increasing distance.
 func (g *Graph) NodesByDistance(sourceID string) ([]*Node, []int, error) {
-	sourceNode, err := g.GetNode(sourceID)
-	if err != nil {
-		return nil, nil, err
+	sourceNode, ok := g.getInternalNode(sourceID)
+	if !ok {
+		return nil, nil, fmt.Errorf("source node %s not found", sourceID)
 	}
 
-	g.mutex.RLock()
-	defer g.mutex.RUnlock()
-
+	// BFS to compute distances
 	visited := make(map[string]int) // node ID -> distance
 	queue := []struct {
 		node     *Node
@@ -281,7 +288,11 @@ func (g *Graph) NodesByDistance(sourceID string) ([]*Node, []int, error) {
 		current := queue[0]
 		queue = queue[1:]
 
-		for _, edge := range g.edgeIndex[current.node.ID] {
+		g.mutex.RLock()
+		edges := g.edgeIndex[current.node.ID]
+		g.mutex.RUnlock()
+
+		for _, edge := range edges {
 			if _, seen := visited[edge.Target.ID]; !seen {
 				visited[edge.Target.ID] = current.distance + 1
 				queue = append(queue, struct {
@@ -292,14 +303,28 @@ func (g *Graph) NodesByDistance(sourceID string) ([]*Node, []int, error) {
 		}
 	}
 
-	nodes := make([]*Node, 0, len(visited))
-	distances := make([]int, 0, len(visited))
+	// Collect and sort by distance
+	type pair struct {
+		id string
+		d  int
+	}
+	pairs := make([]pair, 0, len(visited))
+	for id, d := range visited {
+		pairs = append(pairs, pair{id: id, d: d})
+	}
+	sort.Slice(pairs, func(i, j int) bool {
+		if pairs[i].d == pairs[j].d {
+			return pairs[i].id < pairs[j].id
+		}
+		return pairs[i].d < pairs[j].d
+	})
 
-	for nodeID, distance := range visited {
-		// Access nodes map directly since we already hold RLock
-		if n, exists := g.nodes[nodeID]; exists {
-			nodes = append(nodes, n)
-			distances = append(distances, distance)
+	nodes := make([]*Node, 0, len(pairs))
+	distances := make([]int, 0, len(pairs))
+	for _, p := range pairs {
+		if n, ok := g.getInternalNode(p.id); ok {
+			nodes = append(nodes, cloneNode(n))
+			distances = append(distances, p.d)
 		}
 	}
 
