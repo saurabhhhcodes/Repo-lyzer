@@ -354,13 +354,54 @@ func (m DashboardModel) overviewView() string {
 	))
 	riskPanel := m.riskAlertsView()
 
+	contrib := m.data.ContributionScore
+	var contribDetails string
+	if contrib.Level != "" {
+		contribDetails = fmt.Sprintf("Score: %.1f/10 (%s)\n\n", contrib.Score, contrib.Level)
+		if len(contrib.Strengths) > 0 {
+			contribDetails += "Strengths:\n"
+			for _, s := range contrib.Strengths {
+				if len(s) > 30 {
+					s = s[:27] + "..."
+				}
+				contribDetails += "  ✓ " + s + "\n"
+			}
+		}
+		if len(contrib.Weaknesses) > 0 {
+			if len(contrib.Strengths) > 0 {
+				contribDetails += "\n"
+			}
+			contribDetails += "Weaknesses:\n"
+			for _, w := range contrib.Weaknesses {
+				if len(w) > 30 {
+					w = w[:27] + "..."
+				}
+				contribDetails += "  ✗ " + w + "\n"
+			}
+		}
+	} else {
+		contribDetails = "No contribution data."
+	}
+
+	contribBox := CardStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+		lipgloss.NewStyle().Bold(true).Render("🤝 Contribution Friendliness"),
+		"\n"+contribDetails,
+	))
+
+	var bottomPanel string
+	if riskPanel == "" {
+		bottomPanel = contribBox
+	} else {
+		bottomPanel = lipgloss.JoinHorizontal(lipgloss.Top, riskPanel, contribBox)
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		lipgloss.JoinHorizontal(lipgloss.Center, header, subHeader),
 		"\n",
 		lipgloss.JoinHorizontal(lipgloss.Top, metricsBox, chartBox),
 		"\n",
-		riskPanel,
+		bottomPanel,
 	)
 
 }
