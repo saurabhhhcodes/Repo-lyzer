@@ -152,6 +152,10 @@ var analyzeCmd = &cobra.Command{
 			return runDryRun(args[0])
 		}
 
+		if compact && contribute {
+			return fmt.Errorf("cannot use --compact and --contribute flags together")
+		}
+
 		if summary {
 			return runSummary(args[0])
 		}
@@ -192,7 +196,7 @@ var analyzeCmd = &cobra.Command{
 					if token != "" {
 						client.SetToken(token)
 						// Retry fetching the repo with the token
-						overallProgress = progress.NewOverallProgress(9)
+						overallProgress = progress.NewOverallProgress(steps)
 						overallProgress.StartStep("🔍 Fetching repository information")
 						repoInfo, err = client.GetRepo(owner, repo)
 						overallProgress.CompleteStep("Repository information fetched")

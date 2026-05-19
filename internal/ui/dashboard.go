@@ -379,20 +379,21 @@ func (m DashboardModel) overviewView() string {
 				contribDetails += "  ✗ " + w + "\n"
 			}
 		}
-	} else {
-		contribDetails = "No contribution data."
 	}
 
-	contribBox := CardStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
-		lipgloss.NewStyle().Bold(true).Render("🤝 Contribution Friendliness"),
-		"\n"+contribDetails,
-	))
-
 	var bottomPanel string
-	if riskPanel == "" {
-		bottomPanel = contribBox
+	if contrib.Level != "" {
+		contribBox := CardStyle.Render(lipgloss.JoinVertical(lipgloss.Left,
+			lipgloss.NewStyle().Bold(true).Render("🤝 Contribution Friendliness"),
+			"\n"+contribDetails,
+		))
+		if riskPanel == "" {
+			bottomPanel = contribBox
+		} else {
+			bottomPanel = lipgloss.JoinHorizontal(lipgloss.Top, riskPanel, contribBox)
+		}
 	} else {
-		bottomPanel = lipgloss.JoinHorizontal(lipgloss.Top, riskPanel, contribBox)
+		bottomPanel = riskPanel
 	}
 
 	return lipgloss.JoinVertical(

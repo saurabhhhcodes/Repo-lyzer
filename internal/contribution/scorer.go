@@ -91,12 +91,12 @@ func Calculate(
 			if issue.UpdatedAt.Before(cutoffStale) {
 				staleOpenIssues++
 			}
-		}
 
-		for _, label := range issue.Labels {
-			labelNameLower := strings.ToLower(label.Name)
-			if goodFirstIssueLabels[labelNameLower] {
-				hasGoodFirstIssue = true
+			for _, label := range issue.Labels {
+				labelNameLower := strings.ToLower(label.Name)
+				if goodFirstIssueLabels[labelNameLower] {
+					hasGoodFirstIssue = true
+				}
 			}
 		}
 	}
@@ -128,10 +128,23 @@ func Calculate(
 	// 5. Active maintainers (commit in last 30 days) — 2.0 pts
 	cutoffActiveMaintainers := time.Now().AddDate(0, 0, -30)
 	hasActiveMaintainers := false
+
+	// Identify core maintainers (e.g. top 3 contributors)
+	maintainers := make(map[string]bool)
+	maxMaintainers := 3
+	if len(contributors) < maxMaintainers {
+		maxMaintainers = len(contributors)
+	}
+	for i := 0; i < maxMaintainers; i++ {
+		maintainers[strings.ToLower(contributors[i].Login)] = true
+	}
+
 	for _, commit := range commits {
 		if commit.Commit.Author.Date.After(cutoffActiveMaintainers) {
-			hasActiveMaintainers = true
-			break
+			if commit.Author != nil && maintainers[strings.ToLower(commit.Author.Login)] {
+				hasActiveMaintainers = true
+				break
+			}
 		}
 	}
 
