@@ -98,7 +98,7 @@ func printCommitTrends(metrics *analyzer.TrendMetrics, detailed bool) {
     fmt.Println("Monthly Breakdown:")
     
     for _, month := range metrics.MonthlyData {
-        fmt.Printf("- %s : %d commits\n", month.Month.Format("Jan 6"), month.Commits)
+        fmt.Printf("- %s : %d commits\n", month.Month.Format("Jan 06"), month.Commits)
     }
 
     fmt.Println()
