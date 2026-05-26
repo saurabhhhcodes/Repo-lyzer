@@ -30,6 +30,7 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
+	github "github.com/agnivo988/Repo-lyzer/internal/github"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,11 +41,15 @@ import (
 // Each entry contains the full analysis data along with timing information
 // for TTL-based expiration.
 type CacheEntry struct {
-	RepoName            string            `json:"repo_name"`  // Repository identifier (owner/repo)
-	CachedAt            time.Time         `json:"cached_at"`  // When the entry was cached
-	ExpiresAt           time.Time         `json:"expires_at"` // When the entry expires
-	Analysis            json.RawMessage   `json:"analysis"`   // Serialized AnalysisResult
-	IncrementalMetadata map[string]string `json:"incremental_metadata,omitempty"`
+	RepoName            string                  `json:"repo_name"`  // Repository identifier (owner/repo)
+	CachedAt            time.Time               `json:"cached_at"`  // When the entry was cached
+	ExpiresAt           time.Time               `json:"expires_at"` // When the entry expires
+	Analysis            json.RawMessage         `json:"analysis"`   // Serialized AnalysisResult
+	IncrementalMetadata map[string]FileMetadata `json:"incremental_metadata,omitempty"`
+}
+type FileMetadata struct {
+	SHA        string    `json:"sha"`
+	AnalyzedAt time.Time `json:"analyzed_at"`
 }
 
 // CacheIndex stores metadata about all cached repositories.
@@ -197,6 +202,7 @@ func (c *Cache) Get(repoName string) (*CacheEntry, bool) {
 
 	// Check if expired
 	if time.Now().After(entry.ExpiresAt) {
+		c.Delete(repoName)
 		return nil, false
 	}
 
@@ -240,7 +246,7 @@ func (c *Cache) SetWithTTL(repoName string, analysis interface{}, ttl time.Durat
 		CachedAt:            now,
 		ExpiresAt:           now.Add(ttl),
 		Analysis:            analysisData,
-		IncrementalMetadata: make(map[string]string),
+		IncrementalMetadata: make(map[string]FileMetadata),
 	}
 
 	// Save to file
@@ -389,11 +395,14 @@ func (c *Cache) CleanExpired() int {
 
 	for repoName, entry := range c.index.Entries {
 		if now.After(entry.ExpiresAt) {
-			c.Delete(repoName)
+			delete(c.index.Entries, repoName)
+			os.Remove(filepath.Join(c.cacheDir, "repos", repoToFilename(repoName)))
 			removed++
 		}
 	}
-
+	if removed > 0 {
+		c.saveIndex()
+	}
 	return removed
 }
 
@@ -418,4 +427,102 @@ func FormatTTL(d time.Duration) string {
 		return "1 minute"
 	}
 	return fmt.Sprintf("%d minutes", minutes)
+}
+
+func BuildFileMetadata(
+	files []github.TreeEntry,
+) map[string]FileMetadata {
+
+	metadata := make(map[string]FileMetadata)
+
+	for _, file := range files {
+		if file.Type != "blob" {
+			continue
+		}
+
+		metadata[file.Path] = FileMetadata{
+			SHA:        file.Sha,
+			AnalyzedAt: time.Now(),
+		}
+	}
+
+	return metadata
+}
+
+func (c *Cache) UpdateFileMetadata(
+	repoName string,
+	metadata map[string]FileMetadata,
+) error {
+
+	entry, found := c.Get(repoName)
+
+	if !found {
+
+		now := time.Now()
+
+		newEntry := CacheEntry{
+			RepoName:            repoName,
+			CachedAt:            now,
+			ExpiresAt:           now.Add(c.config.TTL),
+			IncrementalMetadata: metadata,
+		}
+
+		filename := repoToFilename(repoName)
+		filePath := filepath.Join(c.cacheDir, "repos", filename)
+
+		data, err := json.MarshalIndent(newEntry, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(filePath, data, 0644); err != nil {
+			return err
+		}
+
+		fileInfo, _ := os.Stat(filePath)
+
+		fileSize := int64(0)
+		if fileInfo != nil {
+			fileSize = fileInfo.Size()
+		}
+
+		c.index.Entries[repoName] = CacheIndexEntry{
+			RepoName:  repoName,
+			CachedAt:  now,
+			ExpiresAt: now.Add(c.config.TTL),
+			FileSize:  fileSize,
+		}
+
+		return c.saveIndex()
+	}
+
+	entry.IncrementalMetadata = metadata
+
+	filename := repoToFilename(repoName)
+	filePath := filepath.Join(c.cacheDir, "repos", filename)
+
+	data, err := json.MarshalIndent(entry, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return err
+	}
+
+	fileInfo, _ := os.Stat(filePath)
+
+	fileSize := int64(0)
+	if fileInfo != nil {
+		fileSize = fileInfo.Size()
+	}
+
+	c.index.Entries[repoName] = CacheIndexEntry{
+		RepoName:  repoName,
+		CachedAt:  entry.CachedAt,
+		ExpiresAt: entry.ExpiresAt,
+		FileSize:  fileSize,
+	}
+
+	return c.saveIndex()
 }

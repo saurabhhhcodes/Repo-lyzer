@@ -909,7 +909,7 @@ func (m MainModel) analyzeRepo(ctx context.Context, repoName string) tea.Cmd {
 					cachedHash, exists := entry.IncrementalMetadata[path]
 
 					// File is new or modified
-					if !exists || cachedHash != hash {
+					if !exists || cachedHash.SHA != hash {
 						changedFiles = append(changedFiles, path)
 					}
 				}
