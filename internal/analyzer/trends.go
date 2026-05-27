@@ -173,10 +173,22 @@ func aggregateMonthlyData(commits []github.Commit, issues []github.Issue, prs []
 		}
 	}
 
-	// Aggregate issues (simplified - actual implementation would need more data)
+	// Aggregate issues
 	for _, issue := range issues {
-		// Issues only have state, need more data for proper tracking
-		_ = issue
+		created := issue.CreatedAt
+		if created.Before(since) {
+			continue
+		}
+		monthKey := created.Format("2006-01")
+		if m, ok := monthlyData[monthKey]; ok {
+			m.IssuesOpened++
+		}
+		if issue.State == "closed" && issue.ClosedAt != nil && !issue.ClosedAt.Before(since) {
+			closedKey := issue.ClosedAt.Format("2006-01")
+			if m, ok := monthlyData[closedKey]; ok {
+				m.IssuesClosed++
+			}
+		}
 	}
 
 	// Aggregate PRs

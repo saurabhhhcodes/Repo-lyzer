@@ -77,7 +77,7 @@ Examples:
 		}
 
 		_, _ = client.GetLanguages(r1[0], r1[1])
-		commits1, _ := client.GetCommits(r1[0], r1[1], 14)
+		commits1, _ := client.GetCommits(r1[0], r1[1], 365)
 		contributors1, err := client.GetContributorsWithAvatars(r1[0], r1[1], 15)
 		if err != nil {
 			spinner.Stop()
@@ -101,7 +101,7 @@ Examples:
 		}
 
 		_, _ = client.GetLanguages(r2[0], r2[1])
-		commits2, _ := client.GetCommits(r2[0], r2[1], 14)
+		commits2, _ := client.GetCommits(r2[0], r2[1], 365)
 		contributors2, err := client.GetContributorsWithAvatars(r2[0], r2[1], 15)
 		if err != nil {
 			spinner.Stop()

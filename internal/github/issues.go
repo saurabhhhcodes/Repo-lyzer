@@ -13,6 +13,7 @@ type Issue struct {
 	State       string       `json:"state"`
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   time.Time    `json:"updated_at"`
+	ClosedAt    *time.Time   `json:"closed_at"`
 	Comments    int          `json:"comments"`
 	PullRequest *struct{}    `json:"pull_request,omitempty"`
 	Labels      []IssueLabel `json:"labels"`
