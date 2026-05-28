@@ -33,11 +33,13 @@ func (p *Predictor) ForecastHealth(timeline TimelineView, months int) (*Forecast
 
 	// TODO: Implement health forecasting logic
 	fmt.Println("[EXPERIMENTAL] Health forecasting module is partially implemented")
-		return &ForecastResult{
-		ForecastType: "health",
-		Confidence:   0.25,
-		Summary:      "Forecasting engine is currently experimental",
-}, nil
+	return &ForecastResult{
+		Metric:          "health",
+		ConfidenceScore: 0.25,
+		Trend:           "stable",
+		RiskLevel:       "medium",
+		Recommendations: []string{"Experimental forecast; treat as directional only."},
+	}, nil
 }
 
 // ForecastMaturity generates predictions for repository maturity.
