@@ -122,7 +122,9 @@ func NewMainModel(cache *cache.Cache, config *config.AppSettings) MainModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	return MainModel{
+
+	// Restore last analysis result so it persists across page refreshes
+	model := MainModel{
 		state:          stateMenu,
 		menu:           NewMenuModel(),
 		input:          NewInputModel(),
@@ -143,6 +145,16 @@ func NewMainModel(cache *cache.Cache, config *config.AppSettings) MainModel {
 		appConfig:      config,
 		spinner:        s,
 	}
+
+	// Restore previous analysis result from disk so it survives refreshes
+	if saved, err := LoadCurrentAnalysis(); err == nil && saved != nil {
+		model.dashboard.SetData(*saved)
+		model.dashboard.SetCacheStatus("cached")
+		model.state = stateDashboard
+		model.cacheStatus = "cached"
+	}
+
+	return model
 }
 
 // Init initializes the Bubble Tea program
@@ -334,6 +346,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.history.Entries = history.Entries
 			m.history.AddEntry(result)
 			m.history.Save()
+			// Persist current analysis so it survives refresh
+			if err := SaveCurrentAnalysis(result); err != nil {
+				log.Printf("Failed to persist current analysis: %v", err)
+			}
 		}
 		if cachedResult, ok := msg.(CachedAnalysisResult); ok {
 			m.dashboard.SetData(cachedResult.Result)
@@ -347,6 +363,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.history.Entries = history.Entries
 			m.history.AddEntry(cachedResult.Result)
 			m.history.Save()
+			// Persist current analysis so it survives refresh
+			if err := SaveCurrentAnalysis(cachedResult.Result); err != nil {
+				log.Printf("Failed to persist cached analysis: %v", err)
+			}
 		}
 		if err, ok := msg.(error); ok {
 			m.progress = nil
