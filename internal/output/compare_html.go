@@ -12,9 +12,7 @@ import (
 //go:embed templates/compare.html
 var compareTemplateFS embed.FS
 
-var compareHTMLTemplate = template.Must(template.New("compare.html").Funcs(template.FuncMap{
-	"scoreClass": scoreClass,
-}).ParseFS(compareTemplateFS, "templates/compare.html"))
+var compareHTMLTemplate = template.Must(template.New("compare.html").ParseFS(compareTemplateFS, "templates/compare.html"))
 
 type compareHTMLData struct {
 	GeneratedAt string
