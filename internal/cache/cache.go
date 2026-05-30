@@ -217,13 +217,51 @@ func (c *Cache) Get(repoName string) (*CacheEntry, bool) {
 	return &cacheEntry, true
 }
 
+// GetWithoutTTLExpiration retrieves a cached analysis if available on disk, ignoring expiration checks
+func (c *Cache) GetWithoutTTLExpiration(repoName string) (*CacheEntry, bool) {
+	if !c.config.Enabled {
+		return nil, false
+	}
+
+	_, exists := c.index.Entries[repoName]
+	if !exists {
+		return nil, false
+	}
+
+	// Load full entry from file
+	filename := repoToFilename(repoName)
+	filePath := filepath.Join(c.cacheDir, "repos", filename)
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, false
+	}
+
+	var cacheEntry CacheEntry
+	if err := json.Unmarshal(data, &cacheEntry); err != nil {
+		return nil, false
+	}
+
+	return &cacheEntry, true
+}
+
 // Set stores an analysis result in the cache
 func (c *Cache) Set(repoName string, analysis interface{}) error {
 	return c.SetWithTTL(repoName, analysis, c.config.TTL)
 }
 
+// SetWithMetadata stores an analysis result and incremental metadata in the cache.
+func (c *Cache) SetWithMetadata(repoName string, analysis interface{}, metadata map[string]string) error {
+	return c.SetWithTTLAndMetadata(repoName, analysis, c.config.TTL, metadata)
+}
+
 // SetWithTTL stores an analysis result in the cache with an explicit TTL.
 func (c *Cache) SetWithTTL(repoName string, analysis interface{}, ttl time.Duration) error {
+	return c.SetWithTTLAndMetadata(repoName, analysis, ttl, nil)
+}
+
+// SetWithTTLAndMetadata stores an analysis result and incremental metadata in the cache with an explicit TTL.
+func (c *Cache) SetWithTTLAndMetadata(repoName string, analysis interface{}, ttl time.Duration, metadata map[string]string) error {
 	if !c.config.Enabled || !c.config.AutoCache {
 		return nil
 	}
@@ -235,12 +273,16 @@ func (c *Cache) SetWithTTL(repoName string, analysis interface{}, ttl time.Durat
 	}
 
 	now := time.Now()
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+
 	entry := CacheEntry{
 		RepoName:            repoName,
 		CachedAt:            now,
 		ExpiresAt:           now.Add(ttl),
 		Analysis:            analysisData,
-		IncrementalMetadata: make(map[string]string),
+		IncrementalMetadata: metadata,
 	}
 
 	// Save to file

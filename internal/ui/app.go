@@ -182,6 +182,20 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case ErrorMsg:
 		m.err = error(msg)
 		return m, nil
+
+	case string:
+		// Global string messages from sub-models (dashboard returns "switch_to_tree")
+		if msg == "switch_to_tree" {
+			if len(m.dashboard.data.FileTree) > 0 {
+				m.tree = NewTreeModel(&m.dashboard.data)
+			} else {
+				m.tree = NewTreeModel(nil)
+			}
+			m.tree.width = m.windowWidth
+			m.tree.height = m.windowHeight
+			m.state = stateTree
+			return m, nil
+		}
 	}
 
 	// Delegate to current state's sub-model
@@ -902,24 +916,35 @@ func (m MainModel) analyzeRepo(ctx context.Context, repoName string) tea.Cmd {
 		// Compare with cached incremental metadata
 		changedFiles := []string{}
 
-		if entry, found := m.cache.Get(repoName); found {
-			if entry.IncrementalMetadata != nil {
+		if m.cache != nil {
+			if entry, found := m.cache.GetWithoutTTLExpiration(repoName); found {
+				if entry.IncrementalMetadata != nil {
 
-				for path, hash := range currentHashes {
-					cachedHash, exists := entry.IncrementalMetadata[path]
+					for path, hash := range currentHashes {
+						cachedHash, exists := entry.IncrementalMetadata[path]
 
-					// File is new or modified
-					if !exists || cachedHash != hash {
-						changedFiles = append(changedFiles, path)
+						// File is new or modified
+						if !exists || cachedHash != hash {
+							changedFiles = append(changedFiles, path)
+						}
 					}
-				}
 
-				fmt.Printf("🔄 Incremental analysis enabled\n")
-				fmt.Printf("📂 Changed files detected: %d\n", len(changedFiles))
+					fmt.Printf("🔄 Incremental analysis enabled\n")
+					fmt.Printf("📂 Changed files detected: %d\n", len(changedFiles))
 
-				// No changes detected
-				if len(changedFiles) == 0 {
-					fmt.Println("✅ No repository changes detected. Using cached analysis.")
+					// No changes detected
+					if len(changedFiles) == 0 {
+						fmt.Println("✅ No repository changes detected. Using cached analysis.")
+						var result AnalysisResult
+						if err := json.Unmarshal(entry.Analysis, &result); err == nil {
+							// Return cached result with status
+							return CachedAnalysisResult{
+								Result:   result,
+								IsCached: true,
+								CachedAt: entry.CachedAt,
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1052,9 +1077,9 @@ func (m MainModel) analyzeRepo(ctx context.Context, repoName string) tea.Cmd {
 			ContributionScore:   contribScore,
 		}
 
-		// Save to cache
+		// Save to cache with file tree hashes metadata
 		if m.cache != nil {
-			m.cache.Set(repoName, result)
+			m.cache.SetWithMetadata(repoName, result, currentHashes)
 		}
 
 		// Add success notification

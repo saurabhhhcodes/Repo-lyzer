@@ -147,6 +147,7 @@ var analyzeCmd = &cobra.Command{
 		summary, _ := cmd.Flags().GetBool("summary")
 		incremental, _ := cmd.Flags().GetBool("incremental")
 		contribute, _ := cmd.Flags().GetBool("contribute")
+		format, _ := cmd.Flags().GetString("format")
 
 		if dryRun {
 			return runDryRun(args[0])
@@ -300,8 +301,41 @@ var analyzeCmd = &cobra.Command{
 
 		// Track analysis duration
 		duration := time.Since(startTime)
+		savePath, _ := cmd.Flags().GetString("save")
 
+		if format == "yaml" {
+			return output.PrintYAML(output.CompactConfig{
+				Repo:            repoInfo,
+				HealthScore:     score,
+				BusFactor:       busFactor,
+				BusRisk:         busRisk,
+				MaturityScore:   maturityScore,
+				MaturityLevel:   maturityLevel,
+				CommitsLastYear: len(commits),
+				Contributors:    len(contributors),
+				Duration:        duration,
+				Languages:       langs,
+			})
+		}
+
+		if format != "" {
+			return fmt.Errorf("unsupported format: %s", format)
+		}
 		if compact {
+			if savePath != "" {
+				output.SaveJSON(output.CompactConfig{
+					Repo:            repoInfo,
+					HealthScore:     score,
+					BusFactor:       busFactor,
+					BusRisk:         busRisk,
+					MaturityScore:   maturityScore,
+					MaturityLevel:   maturityLevel,
+					CommitsLastYear: len(commits),
+					Contributors:    len(contributors),
+					Duration:        duration,
+					Languages:       langs,
+				}, savePath)
+			}
 			return output.PrintCompactJSON(output.CompactConfig{
 				Repo:            repoInfo,
 				HealthScore:     score,
@@ -362,6 +396,21 @@ var analyzeCmd = &cobra.Command{
 
 		// Mark analysis as complete
 		overallProgress.Finish()
+
+		if savePath != "" {
+			output.SaveJSON(output.CompactConfig{
+				Repo:            repoInfo,
+				HealthScore:     score,
+				BusFactor:       busFactor,
+				BusRisk:         busRisk,
+				MaturityScore:   maturityScore,
+				MaturityLevel:   maturityLevel,
+				CommitsLastYear: len(commits),
+				Contributors:    len(contributors),
+				Duration:        duration,
+				Languages:       langs,
+			}, savePath)
+		}
 
 		return nil
 	},
@@ -555,4 +604,10 @@ func init() {
 		false,
 		"Show Contribution Friendliness Score inside the overview/cli output",
 	)
+	analyzeCmd.Flags().String(
+		"format",
+		"",
+		"Output format: yaml",
+	)
+
 }
