@@ -105,7 +105,9 @@ func LoadSettings() (*AppSettings, error) {
 	if err != nil {
 		settings := applyEnvOverrides(DefaultSettings())
 		if settings.GitHubToken == "" {
-			if token, secureErr := loadTokenFromSecureStore(); secureErr == nil {
+			if token, secureErr := loadTokenFromSecureStore(); secureErr != nil {
+				return settings, secureErr
+			} else {
 				settings.GitHubToken = token
 			}
 		}
@@ -128,7 +130,9 @@ func LoadSettings() (*AppSettings, error) {
 
 	settings = applyEnvOverrides(settings)
 	if settings.GitHubToken == "" {
-		if token, secureErr := loadTokenFromSecureStore(); secureErr == nil {
+		if token, secureErr := loadTokenFromSecureStore(); secureErr != nil {
+			return settings, secureErr
+		} else {
 			settings.GitHubToken = token
 		}
 	}
@@ -432,7 +436,6 @@ func (s *AppSettings) GetScheduledJobByID(jobID string) *ScheduledJob {
 	return nil
 }
 
-// UpdateScheduledJob updates an existing scheduled job and saves settings
 // UpdateScheduledJob updates an existing scheduled job and saves settings
 func (s *AppSettings) UpdateScheduledJob(job ScheduledJob) error {
 	for i, existingJob := range s.ScheduledJobs {
