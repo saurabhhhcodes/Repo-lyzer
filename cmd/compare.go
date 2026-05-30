@@ -139,13 +139,20 @@ func fetchCompareInput(client *github.Client, owner, repo string) (output.Compar
 		return output.CompareInput{}, err
 	}
 
-	languages, _ := client.GetLanguages(owner, repo)
-	commits, _ := client.GetCommits(owner, repo, 365)
+	languages, err := client.GetLanguages(owner, repo)
+	if err != nil {
+		return output.CompareInput{}, fmt.Errorf("error fetching languages for %s/%s: %w", owner, repo, err)
+	}
+
+	commits, err := client.GetCommits(owner, repo, 365)
+	if err != nil {
+		return output.CompareInput{}, fmt.Errorf("error fetching commits for %s/%s: %w", owner, repo, err)
+	}
+
 	contributors, err := client.GetContributorsWithAvatars(owner, repo, 15)
 	if err != nil {
 		return output.CompareInput{}, fmt.Errorf("error fetching contributors for %s/%s: %w", owner, repo, err)
 	}
-	_, _ = client.GetFileTree(owner, repo, repoInfo.DefaultBranch)
 
 	return output.CompareInput{
 		Repo:         repoInfo,
