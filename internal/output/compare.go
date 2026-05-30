@@ -28,7 +28,7 @@ type CompareRepository struct {
 	Stars           int            `json:"stars"`
 	Forks           int            `json:"forks"`
 	OpenIssues      int            `json:"open_issues"`
-	CommitsLastYear int            `json:"commits_last_year"`
+	CommitsLastYear int            `json:"commit_count_1y"`
 	Contributors    int            `json:"contributors"`
 	HealthScore     int            `json:"health_score"`
 	BusFactor       int            `json:"bus_factor"`
