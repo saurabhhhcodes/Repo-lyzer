@@ -5,8 +5,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-    "strings"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/agnivo988/Repo-lyzer/internal/analyzer"
