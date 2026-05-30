@@ -68,7 +68,20 @@ func ForecastHealthFromTimeline(predictor *Predictor, timeline *temporal.Timelin
 		return nil, fmt.Errorf("forecast health: %w", err)
 	}
 
-	lower, upper, err := model.ConfidenceIntervals(months, predictor.ConfidenceLevel)
+	anchor := timeline.EndTime
+	if anchor.IsZero() && len(timeline.Snapshots) > 0 {
+		anchor = timeline.Snapshots[len(timeline.Snapshots)-1].Timestamp
+	}
+	for i := range predictions {
+		predictions[i].Timestamp = anchor.AddDate(0, i+1, 0)
+	}
+
+	confidenceLevel := predictor.ConfidenceLevel
+	if confidenceLevel <= 0 {
+		confidenceLevel = 0.95
+	}
+
+	lower, upper, err := model.ConfidenceIntervals(months, confidenceLevel)
 	if err != nil {
 		return nil, fmt.Errorf("confidence intervals: %w", err)
 	}
@@ -87,18 +100,13 @@ func ForecastHealthFromTimeline(predictor *Predictor, timeline *temporal.Timelin
 		trend = "degrading"
 	}
 
-	confidenceScore := predictor.ConfidenceLevel
-	if confidenceScore <= 0 {
-		confidenceScore = 0.95
-	}
-
 	return &ForecastResult{
 		Metric:          "health",
 		Predictions:     predictions,
 		Trend:           trend,
 		RiskLevel:       "medium",
 		Recommendations: []string{"Monitor health trend", "Review recent repository activity"},
-		ConfidenceScore: confidenceScore,
+		ConfidenceScore: confidenceLevel,
 		BaselineMean:    mean(historical),
 		BaselineStdDev:  stddev(historical),
 	}, nil

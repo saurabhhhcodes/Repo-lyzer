@@ -3,7 +3,6 @@ package predictive
 import (
 	"fmt"
 	"math"
-	"time"
 )
 
 // TimelineView is the minimal timeline surface needed by predictive analysis.
@@ -258,7 +257,6 @@ func (m *LinearRegressionModel) Forecast(periods int) ([]Prediction, error) {
 		x := float64(m.n + i)
 		y := m.Intercept + m.Slope*x
 		preds[i] = Prediction{
-			Timestamp:  time.Now().AddDate(0, i+1, 0),
 			Value:      y,
 			LowerBound: 0,
 			UpperBound: 0,

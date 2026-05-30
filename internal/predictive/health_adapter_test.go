@@ -121,3 +121,29 @@ func TestForecastHealthFromTimelineSuccess(t *testing.T) {
 		}
 	}
 }
+
+func TestForecastHealthFromTimelineAnchorsTimestampsToLatestSnapshot(t *testing.T) {
+	predictor := NewPredictor()
+	predictor.ForecastHorizon = 2
+	timeline := newTestTimeline(40, 50, 60, 70)
+
+	result, err := ForecastHealthFromTimeline(predictor, timeline, 2)
+	if err != nil {
+		t.Fatalf("ForecastHealthFromTimeline failed: %v", err)
+	}
+
+	want := []time.Time{
+		time.Date(2024, 5, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	if len(result.Predictions) != len(want) {
+		t.Fatalf("unexpected prediction count: got %d want %d", len(result.Predictions), len(want))
+	}
+
+	for i := range want {
+		if !result.Predictions[i].Timestamp.Equal(want[i]) {
+			t.Fatalf("prediction %d timestamp = %v, want %v", i, result.Predictions[i].Timestamp, want[i])
+		}
+	}
+}

@@ -125,6 +125,28 @@ func TestBuildTimelineFromGitHub_ContributorAggregation(t *testing.T) {
 	})
 }
 
+func TestBuildTimelineFromGitHub_IgnoresAnonymousContributorIds(t *testing.T) {
+	withStubbedTimelineData(t, func(base time.Time) {
+		commits := []github.Commit{
+			makeCommit(base.AddDate(0, -1, -10), "alice", "c1"),
+			makeCommit(base.AddDate(0, 0, -12), "", "c2"),
+			makeCommit(base.AddDate(0, 0, -4), "", "c3"),
+		}
+		stubGitHubFetches(t, &github.Repo{FullName: "owner/repo"}, commits, nil, nil)
+
+		timeline, err := BuildTimelineFromGitHub(github.NewClient(), "owner", "repo", 2)
+		if err != nil {
+			t.Fatalf("BuildTimelineFromGitHub failed: %v", err)
+		}
+		if timeline.Snapshots[0].Metrics.ContributorCount != 1 {
+			t.Fatalf("expected 1 contributor in first month, got %d", timeline.Snapshots[0].Metrics.ContributorCount)
+		}
+		if timeline.Snapshots[1].Metrics.ContributorCount != 1 {
+			t.Fatalf("expected anonymous commits to be ignored, got %d contributors", timeline.Snapshots[1].Metrics.ContributorCount)
+		}
+	})
+}
+
 func TestBuildTimelineFromGitHub_OpenIssueCounting(t *testing.T) {
 	withStubbedTimelineData(t, func(base time.Time) {
 		issues := []github.Issue{
@@ -184,6 +206,41 @@ func TestBuildTimelineFromGitHub_SnapshotOrdering(t *testing.T) {
 			if !timeline.Snapshots[i-1].Timestamp.Before(timeline.Snapshots[i].Timestamp) {
 				t.Fatalf("snapshots not ordered chronologically: %v then %v", timeline.Snapshots[i-1].Timestamp, timeline.Snapshots[i].Timestamp)
 			}
+		}
+	})
+}
+
+func TestBuildTimelineFromGitHub_ExclusiveMonthEndBoundaries(t *testing.T) {
+	withStubbedTimelineData(t, func(base time.Time) {
+		monthEnd := time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC)
+		commits := []github.Commit{
+			makeCommit(monthEnd, "alice", "c1"),
+		}
+		issues := []github.Issue{
+			makeIssue(monthEnd, "open", nil, false, 1),
+		}
+		prs := []github.PullRequest{
+			makePullRequest(monthEnd, "open", nil, nil, 1),
+		}
+		stubGitHubFetches(t, &github.Repo{FullName: "owner/repo"}, commits, issues, prs)
+
+		timeline, err := BuildTimelineFromGitHub(github.NewClient(), "owner", "repo", 1)
+		if err != nil {
+			t.Fatalf("BuildTimelineFromGitHub failed: %v", err)
+		}
+		if len(timeline.Snapshots) != 1 {
+			t.Fatalf("expected 1 snapshot, got %d", len(timeline.Snapshots))
+		}
+
+		snapshot := timeline.Snapshots[0]
+		if snapshot.Metrics.CommitCount != 0 {
+			t.Fatalf("expected 0 commits at month end boundary, got %d", snapshot.Metrics.CommitCount)
+		}
+		if snapshot.Metrics.IssuesOpen != 0 {
+			t.Fatalf("expected 0 open issues at month end boundary, got %d", snapshot.Metrics.IssuesOpen)
+		}
+		if snapshot.Metrics.PullRequestsOpen != 0 {
+			t.Fatalf("expected 0 open PRs at month end boundary, got %d", snapshot.Metrics.PullRequestsOpen)
 		}
 	})
 }
@@ -256,10 +313,10 @@ func makeIssue(date time.Time, state string, closedAt *time.Time, isPR bool, num
 		pullRequest = &struct{}{}
 	}
 	return github.Issue{
-		Number:      number,
-		State:       state,
-		CreatedAt:   date.UTC(),
-		ClosedAt:    closedAt,
+		Number:    number,
+		State:     state,
+		CreatedAt: date.UTC(),
+		ClosedAt:  closedAt,
 		PullRequest: pullRequest,
 	}
 }

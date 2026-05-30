@@ -79,7 +79,7 @@ func buildMonthlySnapshots(repoInfo *github.Repo, commits []github.Commit, issue
 		return snapshots
 	}
 
-	lookbackStart := startOfMonthUTC(now).AddDate(0, -(months - 1), 0)
+	lookbackStart := startOfMonthUTC(now).AddDate(0, -(months-1), 0)
 
 	for index := 0; index < months; index++ {
 		monthStart := lookbackStart.AddDate(0, index, 0)
@@ -121,7 +121,7 @@ func monthKey(t time.Time) string {
 func commitsUpTo(commits []github.Commit, monthEnd time.Time) []github.Commit {
 	result := make([]github.Commit, 0, len(commits))
 	for _, commit := range commits {
-		if !commit.Commit.Author.Date.After(monthEnd) {
+		if commit.Commit.Author.Date.Before(monthEnd) {
 			result = append(result, commit)
 		}
 	}
@@ -161,10 +161,10 @@ func countOpenIssuesAtMonthEnd(issues []github.Issue, monthEnd time.Time) int {
 		if issue.PullRequest != nil {
 			continue
 		}
-		if issue.CreatedAt.After(monthEnd) {
+		if !issue.CreatedAt.Before(monthEnd) {
 			continue
 		}
-		if issue.ClosedAt != nil && !issue.ClosedAt.After(monthEnd) {
+		if issue.ClosedAt != nil && issue.ClosedAt.Before(monthEnd) {
 			continue
 		}
 		if issue.State == "closed" && issue.ClosedAt == nil {
@@ -178,13 +178,13 @@ func countOpenIssuesAtMonthEnd(issues []github.Issue, monthEnd time.Time) int {
 func countOpenPullRequestsAtMonthEnd(prs []github.PullRequest, monthEnd time.Time) int {
 	count := 0
 	for _, pr := range prs {
-		if pr.CreatedAt.After(monthEnd) {
+		if !pr.CreatedAt.Before(monthEnd) {
 			continue
 		}
-		if pr.MergedAt != nil && !pr.MergedAt.After(monthEnd) {
+		if pr.MergedAt != nil && pr.MergedAt.Before(monthEnd) {
 			continue
 		}
-		if pr.ClosedAt != nil && !pr.ClosedAt.After(monthEnd) {
+		if pr.ClosedAt != nil && pr.ClosedAt.Before(monthEnd) {
 			continue
 		}
 		count++
@@ -237,9 +237,6 @@ func latestCommitTime(commits []github.Commit) time.Time {
 func commitContributorID(commit github.Commit) string {
 	if commit.Author != nil && commit.Author.Login != "" {
 		return commit.Author.Login
-	}
-	if commit.SHA != "" {
-		return commit.SHA
 	}
 	return ""
 }
