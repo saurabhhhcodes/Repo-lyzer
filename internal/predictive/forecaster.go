@@ -33,13 +33,16 @@ func (p *Predictor) ForecastHealth(timeline TimelineView, months int) (*Forecast
 
 	// TODO: Implement health forecasting logic
 	fmt.Println("[EXPERIMENTAL] Health forecasting module is partially implemented")
-	return &ForecastResult{
-		Metric:          "health",
-		ConfidenceScore: 0.25,
-		Trend:           "stable",
-		RiskLevel:       "medium",
-		Recommendations: []string{"Experimental forecast; treat as directional only."},
-	}, nil
+		return &ForecastResult{
+    Metric:          "health",
+    Predictions:     []Prediction{},
+    Trend:           "stable",
+    RiskLevel:       "medium",
+    Recommendations: []string{"Health forecasting module is currently experimental"},
+    ConfidenceScore: 0.25,
+    BaselineMean:    0,
+    BaselineStdDev:  0,
+}, nil
 }
 
 // ForecastMaturity generates predictions for repository maturity.
@@ -64,9 +67,14 @@ func (p *Predictor) ForecastMaturity(timeline TimelineView, months int) (*Foreca
 	// TODO: Implement maturity forecasting logic
 	fmt.Println("[EXPERIMENTAL] Maturity forecasting module is partially implemented")
 	return &ForecastResult{
-	ForecastType: "maturity",
-	Confidence:   0.20,
-	Summary:      "Maturity forecasting is currently experimental",
+		Metric:          "maturity",
+		Predictions:     []Prediction{},
+		Trend:           "stable",
+		RiskLevel:       "medium",
+		Recommendations: []string{"Maturity forecasting module is currently experimental"},
+		ConfidenceScore: 0.20,
+		BaselineMean:    0,
+		BaselineStdDev:  0,
 }, nil
 }
 

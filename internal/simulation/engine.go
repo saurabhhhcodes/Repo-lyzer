@@ -27,16 +27,33 @@ func (s *ScenarioRunner) RunScenario(scenario SimulationScenario, timeline Timel
 	if scenario.Name == "" {
 		return nil, fmt.Errorf("scenario must have a name")
 	}
-	if scenario.Type == "" {
-		fmt.Println("[WARNING] Scenario type is empty, using generic simulation mode")
-	}
 	// TODO: Implement scenario execution logic
 	fmt.Println("[SIMULATION MODE] Scenario engine is partially implemented")
 	return &SimulationResult{
-		ScenarioName: scenario.Name,
-		Status:       "experimental",
-		Summary:      "Simulation engine is under active development",
-	}, nil
+		Scenario: scenario,
+
+		InitialState: map[string]float64{},
+		FinalState:   map[string]float64{},
+
+		HealthTrajectory:     []float64{},
+		RiskTrajectory:       []float64{},
+		ComplexityTrajectory: []float64{},
+
+		Timestamps: []time.Time{},
+
+		KeyFindings: []string{
+			"Simulation engine is currently experimental",
+		},
+
+		Recommendations: []string{
+			"Use simulation results with caution",
+		},
+
+		HealthChange: 0,
+		RiskChange:   0,
+
+		Success: true,
+}, nil
 }
 
 // RunMultipleScenarios executes multiple scenarios and returns all results.
