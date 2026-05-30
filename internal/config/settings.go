@@ -152,7 +152,7 @@ func (s *AppSettings) SaveSettings() error {
 	}
 
 	// Ensure directory exists
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 
@@ -161,7 +161,7 @@ func (s *AppSettings) SaveSettings() error {
 		return err
 	}
 
-	return os.WriteFile(settingsPath, data, 0644)
+	return os.WriteFile(settingsPath, data, 0600)
 }
 
 // ResetToDefaults resets all settings to default values and saves
