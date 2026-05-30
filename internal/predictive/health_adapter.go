@@ -100,7 +100,7 @@ func ForecastHealthFromTimeline(predictor *Predictor, timeline *temporal.Timelin
 		Recommendations: []string{"Monitor health trend", "Review recent repository activity"},
 		ConfidenceScore: confidenceScore,
 		BaselineMean:    mean(historical),
-		BaselineStdDev:   stddev(historical),
+		BaselineStdDev:  stddev(historical),
 	}, nil
 }
 

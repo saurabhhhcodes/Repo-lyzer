@@ -256,10 +256,10 @@ func makeIssue(date time.Time, state string, closedAt *time.Time, isPR bool, num
 		pullRequest = &struct{}{}
 	}
 	return github.Issue{
-		Number:    number,
-		State:     state,
-		CreatedAt: date.UTC(),
-		ClosedAt:  closedAt,
+		Number:      number,
+		State:       state,
+		CreatedAt:   date.UTC(),
+		ClosedAt:    closedAt,
 		PullRequest: pullRequest,
 	}
 }

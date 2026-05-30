@@ -79,7 +79,7 @@ func buildMonthlySnapshots(repoInfo *github.Repo, commits []github.Commit, issue
 		return snapshots
 	}
 
-	lookbackStart := startOfMonthUTC(now).AddDate(0, -(months-1), 0)
+	lookbackStart := startOfMonthUTC(now).AddDate(0, -(months - 1), 0)
 
 	for index := 0; index < months; index++ {
 		monthStart := lookbackStart.AddDate(0, index, 0)

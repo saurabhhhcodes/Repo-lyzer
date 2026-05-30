@@ -33,12 +33,12 @@ type Prediction struct {
 
 // ContributorRiskForecast captures contributor risk outputs for temporal analysis.
 type ContributorRiskForecast struct {
-	ContributorID   string
-	BurnoutRisk     float64
-	AttritionRisk   float64
+	ContributorID     string
+	BurnoutRisk       float64
+	AttritionRisk     float64
 	KnowledgeLossRisk float64
-	Trajectory      string
-	Recommendations []string
+	Trajectory        string
+	Recommendations   []string
 }
 
 // Coordinator orchestrates temporal analysis operations across all temporal modules.
