@@ -100,6 +100,9 @@ func (s *Scheduler) executeJob(job config.ScheduledJob) error {
 
 	// Initialize GitHub client
 	client := github.NewClient()
+	if s.settings != nil && s.settings.HasGitHubToken() {
+		client.SetToken(s.settings.GitHubToken)
+	}
 
 	// Fetch repository information
 	repoInfo, err := client.GetRepo(job.Owner, job.Repo)
