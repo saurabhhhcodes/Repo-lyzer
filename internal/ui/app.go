@@ -951,7 +951,11 @@ func (m MainModel) analyzeRepo(ctx context.Context, repoName string) tea.Cmd {
 		tracker := NewProgressTracker()
 
 		// Stage 1: Fetch repository
-		client := github.NewClient()
+		token := ""
+		if m.appConfig != nil {
+			token = m.appConfig.GitHubToken
+		}
+		client := github.NewClientWithToken(token)
 		client.SetContext(ctx)
 		repo, err := client.GetRepo(parts[0], parts[1])
 		if err != nil {
@@ -1174,7 +1178,11 @@ func (m MainModel) analyzeRepo(ctx context.Context, repoName string) tea.Cmd {
 }
 
 func (m MainModel) checkOwnership() bool {
-	client := github.NewClient()
+	token := ""
+	if m.appConfig != nil {
+		token = m.appConfig.GitHubToken
+	}
+	client := github.NewClientWithToken(token)
 	user, err := client.GetUser()
 	if err != nil {
 		return false // If we can't get user, assume not owner
@@ -1336,7 +1344,11 @@ func (m MainModel) compareRepos(repo1Name, repo2Name string) tea.Cmd {
 			return fmt.Errorf("invalid repository URL: second repository must be in owner/repo format or a valid GitHub URL")
 		}
 
-		client := github.NewClient()
+		token := ""
+		if m.appConfig != nil {
+			token = m.appConfig.GitHubToken
+		}
+		client := github.NewClientWithToken(token)
 
 		// Analyze first repo
 		repo1, err := client.GetRepo(parts1[0], parts1[1])
